@@ -1,5 +1,9 @@
 import json
 from functools import reduce
+from dict_templates import RULE_TEMPLATE
+from dict_templates import GROUP_TEMPLATE
+from dict_templates import DEFAULT_OPTIONS
+from simplifier import Simplifier
 
 class LevelCreator(object):
     _json_obj = None
@@ -12,44 +16,9 @@ class LevelCreator(object):
     _empty_tile_ids = None # list
     _options = None
 
-    _rule_template = {
-        "uid": '', # affected
-        "active": True,
-        "size": 3,
-        "tileIds": [], # affected
-        "chance": 1,
-        "breakOnMatch": True,
-        "pattern": [], # affected - e.x. [-1,-1,-1,-1,1,0,0,0,0],
-        "flipX": False, # XXX: later
-        "flipY": False, # XXX: later
-        "xModulo": 1,
-        "yModulo": 1,
-        "checker": "None",
-        "tileMode": "Single",
-        "pivotX": 0,
-        "pivotY": 0,
-        "outOfBoundsValue": None,
-        "perlinActive": False,
-        "perlinSeed": 6841713, # XXX: no idea
-        "perlinScale": 0.2,
-        "perlinOctaves": 2
-    }
-    _group_template = {
-        "uid": '', # affected
-        "name": "New group", # affected
-        "active": True, 
-        "collapsed": False, 
-        "isOptional": False, 
-        "rules": [] # affected
-    }
-    _default_options = {
-        'simplified': False,
-        'simplified_corners': False,
-        'simplified_tjoins': False,
-        'simplified_point': False,
-        'simplified_ends': False,
-        'simplified_pjoins': False,
-    }
+    _rule_template = RULE_TEMPLATE
+    _group_template = GROUP_TEMPLATE
+    _default_options = DEFAULT_OPTIONS
 
     def __init__(self, file_name, level_id, source_layer_id, output_layer_id, empty_tile_ids, options=None):
         self._file_name = file_name
@@ -181,90 +150,11 @@ class LevelCreator(object):
             rules.append(rule)
         rules = self._remove_duplicate_rules(rules)
         rules.sort(key=lambda r: self._sort_pattern(r))
-        if self._options['simplified_corners']:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_corners(r['pattern'])}) for r in rules]
-        if self._options['simplified_tjoins']:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_tjoins(r['pattern'])}) for r in rules]
-        if self._options['simplified_point']:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_point(r['pattern'])}) for r in rules]
-        if self._options['simplified_ends']:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_ends(r['pattern'])}) for r in rules]
-        if self._options['simplified_pjoins']:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_pjoins(r['pattern'])}) for r in rules]
+
+        simplifier = Simplifier(self._options)
+        rules = simplifier.simplify(rules)
+
         return rules
-
-    def _simplify_pattern_corners(self, pattern):
-        # Thin
-        if pattern == [-1,-1,-1,-1,1,0,-1,0,-1]:
-            return [-1,-1,0,-1,1,0,0,0,-1]
-        elif pattern == [-1,-1,-1,0,1,-1,-1,0,-1]:
-            return [0,-1,-1,0,1,-1,-1,0,0]
-        elif pattern == [-1,0,-1,-1,1,0,-1,-1,-1]:
-            return [0,0,-1,-1,1,0,-1,-1,0]
-        elif pattern == [-1,0,-1,0,1,-1,-1,-1,-1]:
-            return [-1,0,0,0,1,-1,0,-1,-1]
-
-        # Thick
-        elif pattern == [-1,-1,-1,-1,1,0,-1,0,0]:
-            return [0,-1,0,-1,1,0,0,0,0]
-        elif pattern == [-1,-1,-1,0,1,-1,0,0,-1]:
-            return [0,-1,0,0,1,-1,0,0,0]
-        elif pattern == [0,0,-1,0,1,-1,-1,-1,-1]:
-            return [0,0,0,0,1,-1,0,-1,0]
-        elif pattern == [-1,0,0,-1,1,0,-1,-1,-1]:
-            return [0,0,0,-1,1,0,0,-1,0]
-
-        return pattern
-
-    def _simplify_pattern_tjoins(self, pattern):
-        if pattern == [-1,-1,-1,0,1,0,-1,0,-1]:
-            return [0,-1,0,0,1,0,-1,0,-1]
-        elif pattern == [-1,0,-1,0,1,0,-1,-1,-1]:
-            return [-1,0,-1,0,1,0,0,-1,0]
-        elif pattern == [-1,0,-1,-1,1,0,-1,0,-1]:
-            return [0,0,-1,-1,1,0,0,0,-1]
-        elif pattern == [-1,0,-1,0,1,-1,-1,0,-1]:
-            return [-1,0,0,0,1,-1,-1,0,0]
-        return pattern
-
-    def _simplify_pattern_point(self, pattern):
-        if pattern == [-1,-1,-1,-1,1,-1,-1,-1,-1]:
-            return [0,-1,0,-1,1,-1,0,-1,0]
-        return pattern
-
-    def _simplify_pattern_ends (self, pattern):
-        if pattern[1] == -1 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == 0:
-            return [0,-1,0,-1,1,-1,0,0,0]
-        elif pattern[1] == 0 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == -1:
-            return [0,0,0,-1,1,-1,0,-1,0]
-        elif pattern[1] == -1 and pattern[3] == 0 and pattern[5] == -1 and pattern[7] == -1:
-            return [0,-1,0,0,1,-1,0,-1,0]
-        elif pattern[1] == -1 and pattern[3] == -1 and pattern[5] == 0 and pattern[7] == -1:
-            return [0,-1,0,-1,1,0,0,-1,0]
-        return pattern
-
-    def _simplify_pattern_pjoins(self, pattern):
-        # looks like a P - bar above
-        if pattern == [-1,-1,-1,0,1,0,-1,0,0]:
-            return [0,-1,0,0,1,0,-1,0,0]
-        elif pattern == [-1,-1,-1,0,1,0,0,0,-1]:
-            return [0,-1,0,0,1,0,0,0,-1]
-        # looks like a P - bar under
-        elif pattern == [-1,0,0,0,1,0,-1,-1,-1]:
-            return [-1,0,0,0,1,0,0,-1,0]
-        elif pattern == [0,0,-1,0,1,0,-1,-1,-1]:
-            return [0,0,-1,0,1,0,0,-1,0]
-        # looks like a P - bar left
-        elif pattern == [-1,0,-1,-1,1,0,-1,0,0]:
-            return [0,0,-1,-1,1,0,0,0,0]
-        elif pattern == [-1,0,0,-1,1,0,-1,0,-1]:
-            return [0,0,0,-1,1,0,0,0,-1]
-        # looks like a P - bar right
-        elif pattern == [-1,0,-1,0,1,-1,0,0,-1]:
-            return [-1,0,0,0,1,-1,0,0,0]
-        elif pattern == [0,0,-1,0,1,-1,-1,0,-1]:
-            return [0,0,0,0,1,-1,-1,0,0]
-        return pattern
 
     def _sort_pattern(self, rule):
         total_sum = sum(rule['pattern'])

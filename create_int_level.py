@@ -1,4 +1,5 @@
 import json
+from functools import reduce
 
 class LevelCreator(object):
     _json_obj = None
@@ -107,9 +108,13 @@ class LevelCreator(object):
     def _remove_duplicate_rules(self, rules):
         cleaned = []
         for rule in rules:
-            contains = bool([r for r in cleaned if r['pattern'] == rule['pattern']])
-            if not contains:
+            found = [r for r in cleaned if r['pattern'] == rule['pattern']]
+            if not found:
                 cleaned.append(rule)
+            else:
+                found_rule = found[0]
+                new_tile_ids = list(set(found_rule['tileIds'] + rule['tileIds']))
+                found_rule['tileIds'] = new_tile_ids
         return cleaned
 
     def _create_groups(self, rules):
@@ -348,5 +353,4 @@ if __name__ == '__main__':
     creator = LevelCreator('source-auto.ldtk', 'Level_0', 'Tiles', 'IntGrid2', [137], dict(
         simplified=True,
     ))
-    # creator.get_int_level_updated()
     creator.update_file_with_int_level()

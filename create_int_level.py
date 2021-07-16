@@ -45,6 +45,7 @@ class LevelCreator(object):
         'friendly_corners': False,
         'friendly_tjoins': False,
         'friendly_point': False,
+        'friendly_ends': False,
     }
 
     def __init__(self, file_name, level_id, source_layer_id, output_layer_id, empty_tile_ids, options=None):
@@ -148,6 +149,8 @@ class LevelCreator(object):
             rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_tjoins(r['pattern'])}) for r in rules]
         if self._options['friendly_point']:
             rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_point(r['pattern'])}) for r in rules]
+        if self._options['friendly_ends']:
+            rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_ends(r['pattern'])}) for r in rules]
         return rules
 
     def _pattern_with_friendly_corners(self, pattern):
@@ -175,6 +178,17 @@ class LevelCreator(object):
     def _pattern_with_friendly_point(self, pattern):
         if pattern == [-1,-1,-1,-1,1,-1,-1,-1,-1]:
             return [0,-1,0,-1,1,-1,0,-1,0]
+        return pattern
+
+    def _pattern_with_friendly_ends (self, pattern):
+        if pattern[1] == -1 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == 0:
+            return [0,-1,0,-1,1,-1,0,0,0]
+        elif pattern[1] == 0 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == -1:
+            return [0,0,0,-1,1,-1,0,-1,0]
+        elif pattern[1] == -1 and pattern[3] == 0 and pattern[5] == -1 and pattern[7] == -1:
+            return [0,-1,0,0,1,-1,0,-1,0]
+        elif pattern[1] == -1 and pattern[3] == -1 and pattern[5] == 0 and pattern[7] == -1:
+            return [0,-1,0,-1,1,0,0,-1,0]
         return pattern
 
     def _sort_pattern(self, rule):
@@ -265,6 +279,7 @@ if __name__ == '__main__':
         friendly_corners=True,
         friendly_tjoins=True,
         friendly_point=True,
+        friendly_ends=True,
     ))
     # creator.get_int_level_updated()
     creator.update_file_with_int_level()

@@ -42,11 +42,12 @@ class LevelCreator(object):
         "rules": [] # affected
     }
     _default_options = {
-        'friendly_corners': False,
-        'friendly_tjoins': False,
-        'friendly_point': False,
-        'friendly_ends': False,
-        'friendly_pjoins': False,
+        'simplified': False,
+        'simplified_corners': False,
+        'simplified_tjoins': False,
+        'simplified_point': False,
+        'simplified_ends': False,
+        'simplified_pjoins': False,
     }
 
     def __init__(self, file_name, level_id, source_layer_id, output_layer_id, empty_tile_ids, options=None):
@@ -55,10 +56,22 @@ class LevelCreator(object):
         self._source_layer_id = source_layer_id
         self._output_layer_id = output_layer_id
         self._empty_tile_ids = empty_tile_ids if empty_tile_ids else []
-        self._options = self._copy_update_dict(self._default_options, options or {})
+        self._options = self._prepare_options(options)
 
         self._json_obj = self._get_json(file_name)
         self._next_uid = self._json_obj['nextUid']
+
+    def _prepare_options(self, options):
+        prepared_options = self._copy_update_dict(self._default_options, options or {})
+        if prepared_options['simplified']:
+            prepared_options = self._copy_update_dict(prepared_options, {
+                'simplified_corners': True,
+                'simplified_tjoins': True,
+                'simplified_point': True,
+                'simplified_ends': True,
+                'simplified_pjoins': True,
+            })
+        return prepared_options
 
     def update_file_with_int_level(self, output_file_path=None):
         file_json_updated = self._replace_int_level_in_json()
@@ -163,19 +176,19 @@ class LevelCreator(object):
             rules.append(rule)
         rules = self._remove_duplicate_rules(rules)
         rules.sort(key=lambda r: self._sort_pattern(r))
-        if self._options['friendly_corners']:
-            rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_corners(r['pattern'])}) for r in rules]
-        if self._options['friendly_tjoins']:
-            rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_tjoins(r['pattern'])}) for r in rules]
-        if self._options['friendly_point']:
-            rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_point(r['pattern'])}) for r in rules]
-        if self._options['friendly_ends']:
-            rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_ends(r['pattern'])}) for r in rules]
-        if self._options['friendly_pjoins']:
-            rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_pjoins(r['pattern'])}) for r in rules]
+        if self._options['simplified_corners']:
+            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_corners(r['pattern'])}) for r in rules]
+        if self._options['simplified_tjoins']:
+            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_tjoins(r['pattern'])}) for r in rules]
+        if self._options['simplified_point']:
+            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_point(r['pattern'])}) for r in rules]
+        if self._options['simplified_ends']:
+            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_ends(r['pattern'])}) for r in rules]
+        if self._options['simplified_pjoins']:
+            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_pjoins(r['pattern'])}) for r in rules]
         return rules
 
-    def _pattern_with_friendly_corners(self, pattern):
+    def _simplify_pattern_corners(self, pattern):
         # Thin
         if pattern == [-1,-1,-1,-1,1,0,-1,0,-1]:
             return [-1,-1,0,-1,1,0,0,0,-1]
@@ -198,7 +211,7 @@ class LevelCreator(object):
 
         return pattern
 
-    def _pattern_with_friendly_tjoins(self, pattern):
+    def _simplify_pattern_tjoins(self, pattern):
         if pattern == [-1,-1,-1,0,1,0,-1,0,-1]:
             return [0,-1,0,0,1,0,-1,0,-1]
         elif pattern == [-1,0,-1,0,1,0,-1,-1,-1]:
@@ -209,12 +222,12 @@ class LevelCreator(object):
             return [-1,0,0,0,1,-1,-1,0,0]
         return pattern
 
-    def _pattern_with_friendly_point(self, pattern):
+    def _simplify_pattern_point(self, pattern):
         if pattern == [-1,-1,-1,-1,1,-1,-1,-1,-1]:
             return [0,-1,0,-1,1,-1,0,-1,0]
         return pattern
 
-    def _pattern_with_friendly_ends (self, pattern):
+    def _simplify_pattern_ends (self, pattern):
         if pattern[1] == -1 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == 0:
             return [0,-1,0,-1,1,-1,0,0,0]
         elif pattern[1] == 0 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == -1:
@@ -225,7 +238,7 @@ class LevelCreator(object):
             return [0,-1,0,-1,1,0,0,-1,0]
         return pattern
 
-    def _pattern_with_friendly_pjoins(self, pattern):
+    def _simplify_pattern_pjoins(self, pattern):
         # looks like a P - bar above
         if pattern == [-1,-1,-1,0,1,0,-1,0,0]:
             return [0,-1,0,0,1,0,-1,0,0]
@@ -333,11 +346,7 @@ class LevelCreator(object):
 
 if __name__ == '__main__':
     creator = LevelCreator('source-auto.ldtk', 'Level_0', 'Tiles', 'IntGrid2', [137], dict(
-        friendly_corners=True,
-        friendly_tjoins=True,
-        friendly_point=True,
-        friendly_ends=True,
-        friendly_pjoins=True,
+        simplified=True,
     ))
     # creator.get_int_level_updated()
     creator.update_file_with_int_level()

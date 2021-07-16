@@ -209,24 +209,24 @@ class LevelCreator(object):
     def _pattern_with_friendly_pjoins(self, pattern):
         # looks like a P - bar above
         if pattern == [-1,-1,-1,0,1,0,-1,0,0]:
-            return [0,-1,-1,0,1,0,-1,0,0]
+            return [0,-1,0,0,1,0,-1,0,0]
         elif pattern == [-1,-1,-1,0,1,0,0,0,-1]:
-            return [-1,-1,0,0,1,0,0,0,-1]
+            return [0,-1,0,0,1,0,0,0,-1]
         # looks like a P - bar under
         elif pattern == [-1,0,0,0,1,0,-1,-1,-1]:
-            return [-1,0,0,0,1,0,0,-1,-1]
+            return [-1,0,0,0,1,0,0,-1,0]
         elif pattern == [0,0,-1,0,1,0,-1,-1,-1]:
-            return [0,0,-1,0,1,0,-1,-1,0]
+            return [0,0,-1,0,1,0,0,-1,0]
         # looks like a P - bar left
         elif pattern == [-1,0,-1,-1,1,0,-1,0,0]:
-            return [0,0,-1,-1,1,0,-1,0,0]
+            return [0,0,-1,-1,1,0,0,0,0]
         elif pattern == [-1,0,0,-1,1,0,-1,0,-1]:
-            return [-1,0,0,-1,1,0,0,0,-1]
+            return [0,0,0,-1,1,0,0,0,-1]
         # looks like a P - bar right
         elif pattern == [-1,0,-1,0,1,-1,0,0,-1]:
-            return [-1,0,0,0,1,-1,0,0,-1]
+            return [-1,0,0,0,1,-1,0,0,0]
         elif pattern == [0,0,-1,0,1,-1,-1,0,-1]:
-            return [0,0,-1,0,1,-1,-1,0,0]
+            return [0,0,0,0,1,-1,-1,0,0]
         return pattern
 
     def _sort_pattern(self, rule):

@@ -12,15 +12,15 @@ class LevelCreator(object):
     _options = None
 
     _rule_template = {
-        "uid": 'XXX', # XXX
+        "uid": '', # affected
         "active": True,
         "size": 3,
-        "tileIds": [71], # XXX
+        "tileIds": [], # affected
         "chance": 1,
         "breakOnMatch": True,
-        "pattern": [], # [0,-1,0,-1,1,-1,0,-1,0],
-        "flipX": False, # XXX
-        "flipY": False, # XXX
+        "pattern": [], # affected - e.x. [-1,-1,-1,-1,1,0,0,0,0],
+        "flipX": False, # XXX: later
+        "flipY": False, # XXX: later
         "xModulo": 1,
         "yModulo": 1,
         "checker": "None",
@@ -29,17 +29,17 @@ class LevelCreator(object):
         "pivotY": 0,
         "outOfBoundsValue": None,
         "perlinActive": False,
-        "perlinSeed": 6841713, # XXX
+        "perlinSeed": 6841713, # XXX: no idea
         "perlinScale": 0.2,
         "perlinOctaves": 2
     }
     _group_template = {
-        "uid": 'XXX', # XXX
-        "name": "New group", # XXX
+        "uid": '', # affected
+        "name": "New group", # affected
         "active": True, 
         "collapsed": False, 
         "isOptional": False, 
-        "rules": [] # XXX
+        "rules": [] # affected
     }
     _default_options = {
         'friendly_corners': False,
@@ -94,8 +94,7 @@ class LevelCreator(object):
     def _remove_duplicate_rules(self, rules):
         cleaned = []
         for rule in rules:
-            pattern_as_string = str(rule['pattern'])
-            contains = bool([r for r in cleaned if str(r['pattern']) == pattern_as_string])
+            contains = bool([r for r in cleaned if r['pattern'] == rule['pattern']])
             if not contains:
                 cleaned.append(rule)
         return cleaned
@@ -109,22 +108,42 @@ class LevelCreator(object):
             (r['pattern'][3] == -1 and r['pattern'][5] == -1)]
         if len(thin_rules) > 0:
             groups.append(self._copy_update_dict(self._group_template, {
-                'name': 'Thin tiles',
+                'name': 'Thin Tiles',
                 'uid': self._get_group_uid(),
                 'rules': thin_rules,
             }))
         thin_rules_ids = [r['uid'] for r in thin_rules]
         remaining_rules = [r for r in remaining_rules if r['uid'] not in thin_rules_ids]
-        # print(1111, thin_rules_ids) # XXX
-        # print(1112, [r['uid'] for r in remaining_rules]) # XXX
+
+        intcorner_rules = [r for r in remaining_rules if
+            r['pattern'] in ([-1,0,0,0,1,0,0,0,0], [0,0,-1,0,1,0,0,0,0], [0,0,0,0,1,0,-1,0,0], [0,0,0,0,1,0,0,0,-1])]
+        intcorner_rules_ids = [r['uid'] for r in intcorner_rules]
+        remaining_rules = [r for r in remaining_rules if r['uid'] not in intcorner_rules_ids]
+
+        inside_rules = [r for r in remaining_rules if r['pattern'] == [0,0,0,0,1,0,0,0,0]]
+        inside_rules_ids = [r['uid'] for r in inside_rules]
+        remaining_rules = [r for r in remaining_rules if r['uid'] not in inside_rules_ids]
 
         if len(remaining_rules) > 0:
             groups.append(self._copy_update_dict(self._group_template, {
-                'name': 'Remaining tiles',
+                'name': 'Remaining Tiles',
                 'uid': self._get_group_uid(),
                 'rules': remaining_rules,
             }))
-        print(1111, len(thin_rules), len(remaining_rules)) # XXX
+
+        if len(intcorner_rules) > 0:
+            groups.append(self._copy_update_dict(self._group_template, {
+                'name': 'Internal Corner Tiles',
+                'uid': self._get_group_uid(),
+                'rules': intcorner_rules,
+            }))
+
+        if len(inside_rules) > 0:
+            groups.append(self._copy_update_dict(self._group_template, {
+                'name': 'Fill Tiles',
+                'uid': self._get_group_uid(),
+                'rules': inside_rules,
+            }))
 
         return groups
 

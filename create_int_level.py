@@ -46,6 +46,7 @@ class LevelCreator(object):
         'friendly_tjoins': False,
         'friendly_point': False,
         'friendly_ends': False,
+        'friendly_pjoins': False,
     }
 
     def __init__(self, file_name, level_id, source_layer_id, output_layer_id, empty_tile_ids, options=None):
@@ -151,9 +152,12 @@ class LevelCreator(object):
             rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_point(r['pattern'])}) for r in rules]
         if self._options['friendly_ends']:
             rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_ends(r['pattern'])}) for r in rules]
+        if self._options['friendly_pjoins']:
+            rules = [self._copy_update_dict(r, {'pattern': self._pattern_with_friendly_pjoins(r['pattern'])}) for r in rules]
         return rules
 
     def _pattern_with_friendly_corners(self, pattern):
+        # Thin
         if pattern == [-1,-1,-1,-1,1,0,-1,0,-1]:
             return [-1,-1,0,-1,1,0,0,0,-1]
         elif pattern == [-1,-1,-1,0,1,-1,-1,0,-1]:
@@ -162,6 +166,17 @@ class LevelCreator(object):
             return [0,0,-1,-1,1,0,-1,-1,0]
         elif pattern == [-1,0,-1,0,1,-1,-1,-1,-1]:
             return [-1,0,0,0,1,-1,0,-1,-1]
+
+        # Thick
+        elif pattern == [-1,-1,-1,-1,1,0,-1,0,0]:
+            return [0,-1,0,-1,1,0,0,0,0]
+        elif pattern == [-1,-1,-1,0,1,-1,0,0,-1]:
+            return [0,-1,0,0,1,-1,0,0,0]
+        elif pattern == [0,0,-1,0,1,-1,-1,-1,-1]:
+            return [0,0,0,0,1,-1,0,-1,0]
+        elif pattern == [-1,0,0,-1,1,0,-1,-1,-1]:
+            return [0,0,0,-1,1,0,0,-1,0]
+
         return pattern
 
     def _pattern_with_friendly_tjoins(self, pattern):
@@ -189,6 +204,29 @@ class LevelCreator(object):
             return [0,-1,0,0,1,-1,0,-1,0]
         elif pattern[1] == -1 and pattern[3] == -1 and pattern[5] == 0 and pattern[7] == -1:
             return [0,-1,0,-1,1,0,0,-1,0]
+        return pattern
+
+    def _pattern_with_friendly_pjoins(self, pattern):
+        # looks like a P - bar above
+        if pattern == [-1,-1,-1,0,1,0,-1,0,0]:
+            return [0,-1,-1,0,1,0,-1,0,0]
+        elif pattern == [-1,-1,-1,0,1,0,0,0,-1]:
+            return [-1,-1,0,0,1,0,0,0,-1]
+        # looks like a P - bar under
+        elif pattern == [-1,0,0,0,1,0,-1,-1,-1]:
+            return [-1,0,0,0,1,0,0,-1,-1]
+        elif pattern == [0,0,-1,0,1,0,-1,-1,-1]:
+            return [0,0,-1,0,1,0,-1,-1,0]
+        # looks like a P - bar left
+        elif pattern == [-1,0,-1,-1,1,0,-1,0,0]:
+            return [0,0,-1,-1,1,0,-1,0,0]
+        elif pattern == [-1,0,0,-1,1,0,-1,0,-1]:
+            return [-1,0,0,-1,1,0,0,0,-1]
+        # looks like a P - bar right
+        elif pattern == [-1,0,-1,0,1,-1,0,0,-1]:
+            return [-1,0,0,0,1,-1,0,0,-1]
+        elif pattern == [0,0,-1,0,1,-1,-1,0,-1]:
+            return [0,0,-1,0,1,-1,-1,0,0]
         return pattern
 
     def _sort_pattern(self, rule):
@@ -280,6 +318,7 @@ if __name__ == '__main__':
         friendly_tjoins=True,
         friendly_point=True,
         friendly_ends=True,
+        friendly_pjoins=True,
     ))
     # creator.get_int_level_updated()
     creator.update_file_with_int_level()

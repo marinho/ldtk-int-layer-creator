@@ -1,5 +1,2 @@
 *.pyc
-source-manual.ldtk
-source-auto.ldtk
-source-original.ldtk
-source-original-2.ldtk
+.DS_Store

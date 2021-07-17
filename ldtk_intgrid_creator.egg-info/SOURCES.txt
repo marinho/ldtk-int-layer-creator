@@ -1,0 +1,12 @@
+README.md
+setup.py
+ldtk_intgrid_creator/__init__.py
+ldtk_intgrid_creator/dict_templates.py
+ldtk_intgrid_creator/level_creator.py
+ldtk_intgrid_creator/simplifier.py
+ldtk_intgrid_creator/utilities.py
+ldtk_intgrid_creator.egg-info/PKG-INFO
+ldtk_intgrid_creator.egg-info/SOURCES.txt
+ldtk_intgrid_creator.egg-info/dependency_links.txt
+ldtk_intgrid_creator.egg-info/not-zip-safe
+ldtk_intgrid_creator.egg-info/top_level.txt

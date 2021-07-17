@@ -1,13 +1,13 @@
 import json
 from functools import reduce
-from dict_templates import RULE_TEMPLATE, GROUP_TEMPLATE, DEFAULT_OPTIONS, SIMPLIFIED_OPTIONS
-from simplifier import Simplifier
-from utilities import copy_update_dict
+from .dict_templates import RULE_TEMPLATE, GROUP_TEMPLATE, DEFAULT_OPTIONS, SIMPLIFIED_OPTIONS
+from .simplifier import Simplifier
+from .utilities import copy_update_dict
 
 class LevelCreator(object):
     _json_obj = None
     _file_name = str()
-    _level_id = str()
+    _source_level_id = str()
     _source_layer_id = str()
     _output_layer_id = str()
     _next_uid = int()
@@ -19,13 +19,14 @@ class LevelCreator(object):
     _group_template = GROUP_TEMPLATE
     _default_options = DEFAULT_OPTIONS
 
-    def __init__(self, file_name, level_id, source_layer_id, output_layer_id, empty_tile_ids, options=None):
+    def __init__(self, file_name, source_level_id, source_layer_id, output_layer_id, empty_tile_ids, options=None):
         self._file_name = file_name
-        self._level_id = level_id
+        self._source_level_id = source_level_id
         self._source_layer_id = source_layer_id
         self._output_layer_id = output_layer_id
         self._empty_tile_ids = empty_tile_ids if empty_tile_ids else []
         self._options = self._prepare_options(options)
+        print(1111, file_name, source_level_id, source_layer_id, output_layer_id, empty_tile_ids, options) # XXX
 
         self._json_obj = self._get_json(file_name)
         self._next_uid = self._json_obj['nextUid']
@@ -212,14 +213,14 @@ class LevelCreator(object):
         json_obj = json.loads(json_str)
         return json_obj
 
-    def _get_level(self, json_obj, level_id):
+    def _get_level(self, json_obj, source_level_id):
         levels = json_obj['levels']
-        filtered = [l for l in levels if l['identifier'] == level_id]
+        filtered = [l for l in levels if l['identifier'] == source_level_id]
         # TODO: error if len(filtered) != 1
         return filtered[0]
 
     def _get_level_layer(self, layer_id):
-        level_obj = self._get_level(self._json_obj, self._level_id)
+        level_obj = self._get_level(self._json_obj, self._source_level_id)
         levels = level_obj['layerInstances']
         filtered = [l for l in levels if l['__identifier'] == layer_id]
         # TODO: error if len(filtered) != 1
@@ -236,10 +237,3 @@ class LevelCreator(object):
         if prepared_options['simplified']:
             prepared_options = copy_update_dict(prepared_options, SIMPLIFIED_OPTIONS)
         return prepared_options
-
-
-if __name__ == '__main__':
-    creator = LevelCreator('source-auto.ldtk', 'Level_0', 'Tiles', 'IntGrid2', [137], dict(
-        simplified=True,
-    ))
-    creator.update_file_with_int_level()

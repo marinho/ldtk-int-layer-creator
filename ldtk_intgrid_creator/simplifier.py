@@ -1,4 +1,4 @@
-from utilities import copy_update_dict
+from .utilities import copy_update_dict
 
 
 class Simplifier(object):

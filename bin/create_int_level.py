@@ -7,6 +7,7 @@ def prepare_and_parse_args():
     parser.add_argument('source_level', help='ID of the level to base rules on. i.e. "Level_0"')
     parser.add_argument('source_layer', help='ID of the Tiles layer inside level to base rules on. i.e. "Tiles"')
     parser.add_argument('output_layer', help='ID of the IntGrid layer to save the rules into. i.e. "IntGrid"')
+    parser.add_argument('tile_size', type=int, help='Site in pixels of a tile. i.e. 16')
     parser.add_argument('empty_tile', default='', nargs='?', help='IDs (separated by comma) of the tiles that should be taken as empty space. i.e. "137"')
     parser.add_argument('--no-simplified', action='store_true', help='Inform this argument if not wanting simplifier optimiations when defining patterns.')
     args = parser.parse_args()
@@ -23,8 +24,8 @@ if __name__ == '__main__':
         args.source_level,
         args.source_layer,
         args.output_layer,
+        args.tile_size,
         empty_tile_ids,
-        tile_size=16, # FIXME add argument for this
-        options=dict(simplified=args.no_simplified)
+        options=dict(simplified=not args.no_simplified)
     )
     creator.update_file_with_int_level()

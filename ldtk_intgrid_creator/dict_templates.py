@@ -58,11 +58,3 @@ DEFAULT_OPTIONS = {
     'simplified_stubs': False,
     'simplified_pjoins': False,
 }
-
-SIMPLIFIED_OPTIONS = {
-    'simplified_corners': True,
-    'simplified_tjoins': True,
-    'simplified_point': True,
-    'simplified_stubs': True,
-    'simplified_pjoins': True,
-}

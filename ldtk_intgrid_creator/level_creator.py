@@ -33,23 +33,14 @@ class LevelCreator(object):
         self._next_uid = self._json_obj['nextUid']
         self._create_simplifier()
 
-    def _create_simplifier(self):
-        self._simplifier = Simplifier(
-            corners=self._options['simplified_corners'],
-            tjoins=self._options['simplified_tjoins'],
-            point=self._options['simplified_point'],
-            stubs=self._options['simplified_stubs'],
-            pjoins=self._options['simplified_pjoins'],
-        )
-
     def update_file_with_int_level(self, output_file_path=None):
-        file_json_updated = self._replace_int_level_in_json()
+        file_json_updated = self._replace_output_layer_in_json()
         json_as_string = json.dumps(file_json_updated, indent=2, sort_keys=True)
         output_file_name = output_file_path if output_file_path is not None else self._file_name
         with open(output_file_name, 'w') as fp:
             fp.write(json_as_string)
 
-    def get_int_level_updated(self):
+    def get_output_layer_updated(self):
         rules = self._create_rules()
         groups = self._create_groups(rules)
         output_layer = self._get_def_layer(self._output_layer_id)
@@ -58,8 +49,8 @@ class LevelCreator(object):
         # TODO: "__tilesetRelPath": "../Platformer Ground.png",
         return output_layer
 
-    def _replace_int_level_in_json(self):
-        output_layer = self.get_int_level_updated()
+    def _replace_output_layer_in_json(self):
+        output_layer = self.get_output_layer_updated()
         updated_defs = copy_update_dict(self._json_obj['defs'], {})
 
         layer_exists = [layer for layer in updated_defs['layers'] if layer['identifier'] == self._output_layer_id]
@@ -236,3 +227,12 @@ class LevelCreator(object):
         if prepared_options['simplified']:
             prepared_options = copy_update_dict(prepared_options, SIMPLIFIED_OPTIONS)
         return prepared_options
+
+    def _create_simplifier(self):
+        self._simplifier = Simplifier(
+            corners=self._options['simplified_corners'],
+            tjoins=self._options['simplified_tjoins'],
+            point=self._options['simplified_point'],
+            stubs=self._options['simplified_stubs'],
+            pjoins=self._options['simplified_pjoins'],
+        )

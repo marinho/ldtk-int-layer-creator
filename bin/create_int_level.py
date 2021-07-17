@@ -23,7 +23,8 @@ if __name__ == '__main__':
         args.source_level,
         args.source_layer,
         args.output_layer,
-        empty_tile_ids, 
-        dict(simplified=args.no_simplified)
+        empty_tile_ids,
+        tile_size=16, # FIXME add argument for this
+        options=dict(simplified=args.no_simplified)
     )
     creator.update_file_with_int_level()

@@ -15,7 +15,8 @@ def prepare_and_parse_args():
 
 if __name__ == '__main__':
     args = prepare_and_parse_args()
-    empty_tile_ids = list(filter(lambda a: bool(a), args.empty_tile.split(',')))
+    empty_tile_ids = filter(lambda a: bool(a), args.empty_tile.split(','))
+    empty_tile_ids = list(map(lambda a: int(a), empty_tile_ids))
 
     creator = LevelCreator(
         args.ldtk_file,

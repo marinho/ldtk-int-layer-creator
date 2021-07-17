@@ -20,6 +20,7 @@ RULE_TEMPLATE = {
     "perlinScale": 0.2,
     "perlinOctaves": 2
 }
+
 GROUP_TEMPLATE = {
     "uid": '', # affected
     "name": "New group", # affected
@@ -28,11 +29,20 @@ GROUP_TEMPLATE = {
     "isOptional": False, 
     "rules": [] # affected
 }
+
 DEFAULT_OPTIONS = {
     'simplified': False,
     'simplified_corners': False,
     'simplified_tjoins': False,
     'simplified_point': False,
-    'simplified_ends': False,
+    'simplified_stubs': False,
     'simplified_pjoins': False,
+}
+
+SIMPLIFIED_OPTIONS = {
+    'simplified_corners': True,
+    'simplified_tjoins': True,
+    'simplified_point': True,
+    'simplified_stubs': True,
+    'simplified_pjoins': True,
 }

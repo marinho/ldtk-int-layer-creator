@@ -1,27 +1,38 @@
 class Simplifier(object):
-    def __init__(self, options):
-        self._options = options
+    _corners = True
+    _tjoins = True
+    _point = True
+    _stubs = True
+    _pjoins = True
+
+    def __init__(self, corners=True, tjoins=True, point=True, stubs=True, pjoins=True):
+        self._corners = corners
+        self._tjoins = tjoins
+        self._point = point
+        self._stubs = stubs
+        self._pjoins = pjoins
 
     def simplify(self, rules):
-        if self._options['simplified_corners']:
+        if self._corners:
             rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_corners(r['pattern'])}) for r in rules]
-        if self._options['simplified_tjoins']:
+        if self._tjoins:
             rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_tjoins(r['pattern'])}) for r in rules]
-        if self._options['simplified_point']:
+        if self._point:
             rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_point(r['pattern'])}) for r in rules]
-        if self._options['simplified_ends']:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_ends(r['pattern'])}) for r in rules]
-        if self._options['simplified_pjoins']:
+        if self._stubs:
+            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_stubs(r['pattern'])}) for r in rules]
+        if self._pjoins:
             rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_pjoins(r['pattern'])}) for r in rules]
         return rules
 
+    # TODO: move to a utils file
     def _copy_update_dict(self, d1, d2):
         the_copy = d1.copy()
         the_copy.update(d2)
         return the_copy
 
     def _simplify_pattern_corners(self, pattern):
-        # Thin
+        # 1 tile thin (no filling tile)
         if pattern == [-1,-1,-1,-1,1,0,-1,0,-1]:
             return [-1,-1,0,-1,1,0,0,0,-1]
         elif pattern == [-1,-1,-1,0,1,-1,-1,0,-1]:
@@ -31,7 +42,7 @@ class Simplifier(object):
         elif pattern == [-1,0,-1,0,1,-1,-1,-1,-1]:
             return [-1,0,0,0,1,-1,0,-1,-1]
 
-        # Thick
+        # 2+ tiles thick (with filling)
         elif pattern == [-1,-1,-1,-1,1,0,-1,0,0]:
             return [0,-1,0,-1,1,0,0,0,0]
         elif pattern == [-1,-1,-1,0,1,-1,0,0,-1]:
@@ -44,29 +55,30 @@ class Simplifier(object):
         return pattern
 
     def _simplify_pattern_tjoins(self, pattern):
-        if pattern == [-1,-1,-1,0,1,0,-1,0,-1]:
+        if pattern == [-1,-1,-1,0,1,0,-1,0,-1]: # bar above
             return [0,-1,0,0,1,0,-1,0,-1]
-        elif pattern == [-1,0,-1,0,1,0,-1,-1,-1]:
+        elif pattern == [-1,0,-1,0,1,0,-1,-1,-1]: # bar under
             return [-1,0,-1,0,1,0,0,-1,0]
-        elif pattern == [-1,0,-1,-1,1,0,-1,0,-1]:
+        elif pattern == [-1,0,-1,-1,1,0,-1,0,-1]: # bar right
             return [0,0,-1,-1,1,0,0,0,-1]
-        elif pattern == [-1,0,-1,0,1,-1,-1,0,-1]:
+        elif pattern == [-1,0,-1,0,1,-1,-1,0,-1]: # bar left
             return [-1,0,0,0,1,-1,-1,0,0]
         return pattern
 
     def _simplify_pattern_point(self, pattern):
+        # one single tile with no tiles connecting
         if pattern == [-1,-1,-1,-1,1,-1,-1,-1,-1]:
             return [0,-1,0,-1,1,-1,0,-1,0]
         return pattern
 
-    def _simplify_pattern_ends (self, pattern):
-        if pattern[1] == -1 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == 0:
+    def _simplify_pattern_stubs (self, pattern):
+        if pattern[1] == -1 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == 0: # connection under
             return [0,-1,0,-1,1,-1,0,0,0]
-        elif pattern[1] == 0 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == -1:
+        elif pattern[1] == 0 and pattern[3] == -1 and pattern[5] == -1 and pattern[7] == -1: # connection above
             return [0,0,0,-1,1,-1,0,-1,0]
-        elif pattern[1] == -1 and pattern[3] == 0 and pattern[5] == -1 and pattern[7] == -1:
+        elif pattern[1] == -1 and pattern[3] == 0 and pattern[5] == -1 and pattern[7] == -1: # connection left
             return [0,-1,0,0,1,-1,0,-1,0]
-        elif pattern[1] == -1 and pattern[3] == -1 and pattern[5] == 0 and pattern[7] == -1:
+        elif pattern[1] == -1 and pattern[3] == -1 and pattern[5] == 0 and pattern[7] == -1: # connection right
             return [0,-1,0,-1,1,0,0,-1,0]
         return pattern
 

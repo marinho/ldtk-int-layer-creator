@@ -1,8 +1,6 @@
 import json
 from functools import reduce
-from dict_templates import RULE_TEMPLATE
-from dict_templates import GROUP_TEMPLATE
-from dict_templates import DEFAULT_OPTIONS
+from dict_templates import RULE_TEMPLATE, GROUP_TEMPLATE, DEFAULT_OPTIONS, SIMPLIFIED_OPTIONS
 from simplifier import Simplifier
 
 class LevelCreator(object):
@@ -34,13 +32,7 @@ class LevelCreator(object):
     def _prepare_options(self, options):
         prepared_options = self._copy_update_dict(self._default_options, options or {})
         if prepared_options['simplified']:
-            prepared_options = self._copy_update_dict(prepared_options, {
-                'simplified_corners': True,
-                'simplified_tjoins': True,
-                'simplified_point': True,
-                'simplified_ends': True,
-                'simplified_pjoins': True,
-            })
+            prepared_options = self._copy_update_dict(prepared_options, SIMPLIFIED_OPTIONS)
         return prepared_options
 
     def update_file_with_int_level(self, output_file_path=None):
@@ -49,6 +41,17 @@ class LevelCreator(object):
         output_file_name = output_file_path if output_file_path is not None else self._file_name
         with open(output_file_name, 'w') as fp:
             fp.write(json_as_string)
+
+    def get_int_level_updated(self):
+        output_layer = self._get_def_layer(self._output_layer_id)
+        rules = self._create_rules()
+        groups = self._create_groups(rules)
+        output_layer_copy = self._copy_update_dict(output_layer, {
+            'autoRuleGroups': groups,
+        })
+        # TODO: "__tilesetDefUid": 1,
+        # TODO: "__tilesetRelPath": "../Platformer Ground.png",
+        return output_layer_copy
 
     def _replace_int_level_in_json(self):
         int_level_updated = self.get_int_level_updated()
@@ -62,17 +65,6 @@ class LevelCreator(object):
             'defs': updated_defs,
         })
         return file_json_updated
-
-    def get_int_level_updated(self):
-        output_layer = self._get_def_layer(self._output_layer_id)
-        rules = self._create_rules()
-        groups = self._create_groups(rules)
-        output_layer_copy = self._copy_update_dict(output_layer, {
-            'autoRuleGroups': groups,
-        })
-        # TODO: "__tilesetDefUid": 1,
-        # TODO: "__tilesetRelPath": "../Platformer Ground.png",
-        return output_layer_copy
 
     def _remove_duplicate_rules(self, rules):
         cleaned = []
@@ -151,7 +143,13 @@ class LevelCreator(object):
         rules = self._remove_duplicate_rules(rules)
         rules.sort(key=lambda r: self._sort_pattern(r))
 
-        simplifier = Simplifier(self._options)
+        simplifier = Simplifier(
+            corners=self._options['simplified_corners'],
+            tjoins=self._options['simplified_tjoins'],
+            point=self._options['simplified_point'],
+            stubs=self._options['simplified_stubs'],
+            pjoins=self._options['simplified_pjoins'],
+        )
         rules = simplifier.simplify(rules)
 
         return rules
@@ -200,13 +198,17 @@ class LevelCreator(object):
         groups = output_layer['autoRuleGroups']
         existing_rule_ids = []
         rule_uid = self._next_uid
+
         if len(groups) > 0 and len(groups[0]['rules']) > 0:
             existing_rule_ids = [r['uid'] for r in groups[0]['rules']]
+
         if len(existing_rule_ids):
             while (rule_uid - 1) in existing_rule_ids:
                 rule_uid -= 1
+
         if rule_uid == self._next_uid:
             self._next_uid += 1
+
         return rule_uid
 
     def _get_json(self, file_name):
@@ -234,6 +236,7 @@ class LevelCreator(object):
         # TODO: error if len(filtered) != 1
         return filtered[0]
 
+    # TODO: move to a utils file
     def _copy_update_dict(self, d1, d2):
         the_copy = d1.copy()
         the_copy.update(d2)

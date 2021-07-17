@@ -1,6 +1,6 @@
 import json
 from functools import reduce
-from .dict_templates import RULE_TEMPLATE, GROUP_TEMPLATE, DEFAULT_OPTIONS, SIMPLIFIED_OPTIONS
+from .dict_templates import LAYER_TEMPLATE, GROUP_TEMPLATE, RULE_TEMPLATE, DEFAULT_OPTIONS, SIMPLIFIED_OPTIONS
 from .simplifier import Simplifier
 from .utilities import copy_update_dict
 
@@ -10,14 +10,16 @@ class LevelCreator(object):
     _source_level_id = str()
     _source_layer_id = str()
     _output_layer_id = str()
-    _next_uid = int()
+    _next_uid = int() # TODO: optimize to decrease this value ignoring items that are being replaced
     _tile_size = 16 # px
     _empty_tile_ids = None # list
     _options = None
 
-    _rule_template = RULE_TEMPLATE
+    _layer_template = LAYER_TEMPLATE
     _group_template = GROUP_TEMPLATE
+    _rule_template = RULE_TEMPLATE
     _default_options = DEFAULT_OPTIONS
+    _simplifier = Simplifier()
 
     def __init__(self, file_name, source_level_id, source_layer_id, output_layer_id, empty_tile_ids, options=None):
         self._file_name = file_name
@@ -26,10 +28,19 @@ class LevelCreator(object):
         self._output_layer_id = output_layer_id
         self._empty_tile_ids = empty_tile_ids if empty_tile_ids else []
         self._options = self._prepare_options(options)
-        print(1111, file_name, source_level_id, source_layer_id, output_layer_id, empty_tile_ids, options) # XXX
 
         self._json_obj = self._get_json(file_name)
         self._next_uid = self._json_obj['nextUid']
+        self._create_simplifier()
+
+    def _create_simplifier(self):
+        self._simplifier = Simplifier(
+            corners=self._options['simplified_corners'],
+            tjoins=self._options['simplified_tjoins'],
+            point=self._options['simplified_point'],
+            stubs=self._options['simplified_stubs'],
+            pjoins=self._options['simplified_pjoins'],
+        )
 
     def update_file_with_int_level(self, output_file_path=None):
         file_json_updated = self._replace_int_level_in_json()
@@ -39,27 +50,31 @@ class LevelCreator(object):
             fp.write(json_as_string)
 
     def get_int_level_updated(self):
-        output_layer = self._get_def_layer(self._output_layer_id)
         rules = self._create_rules()
         groups = self._create_groups(rules)
-        output_layer_copy = copy_update_dict(output_layer, {
-            'autoRuleGroups': groups,
-        })
+        output_layer = self._get_def_layer(self._output_layer_id)
+        output_layer['autoRuleGroups'] = groups
         # TODO: "__tilesetDefUid": 1,
         # TODO: "__tilesetRelPath": "../Platformer Ground.png",
-        return output_layer_copy
+        return output_layer
 
     def _replace_int_level_in_json(self):
-        int_level_updated = self.get_int_level_updated()
-        updated_layers = [(int_level_updated if l['identifier'] == self._output_layer_id else l)
-            for l in self._json_obj['defs']['layers']]
-        updated_defs = copy_update_dict(self._json_obj['defs'], {
-            'layers': updated_layers,
-        })
+        output_layer = self.get_int_level_updated()
+        updated_defs = copy_update_dict(self._json_obj['defs'], {})
+
+        layer_exists = [layer for layer in updated_defs['layers'] if layer['identifier'] == self._output_layer_id]
+
+        if layer_exists:
+            updated_defs['layers'] = [(output_layer if layer['identifier'] == self._output_layer_id else layer)
+                for layer in updated_defs['layers']]
+        else:
+            updated_defs['layers'] = [output_layer] + updated_defs['layers']
+
         file_json_updated = copy_update_dict(self._json_obj, {
             'nextUid': self._next_uid,
             'defs': updated_defs,
         })
+
         return file_json_updated
 
     def _remove_duplicate_rules(self, rules):
@@ -84,7 +99,7 @@ class LevelCreator(object):
         if len(thin_rules) > 0:
             groups.append(copy_update_dict(self._group_template, {
                 'name': 'Thin Tiles',
-                'uid': self._get_group_uid(),
+                'uid': self._get_next_uid(),
                 'rules': thin_rules,
             }))
         thin_rules_ids = [r['uid'] for r in thin_rules]
@@ -102,21 +117,21 @@ class LevelCreator(object):
         if len(remaining_rules) > 0:
             groups.append(copy_update_dict(self._group_template, {
                 'name': 'Remaining Tiles',
-                'uid': self._get_group_uid(),
+                'uid': self._get_next_uid(),
                 'rules': remaining_rules,
             }))
 
         if len(intcorner_rules) > 0:
             groups.append(copy_update_dict(self._group_template, {
                 'name': 'Internal Corner Tiles',
-                'uid': self._get_group_uid(),
+                'uid': self._get_next_uid(),
                 'rules': intcorner_rules,
             }))
 
         if len(inside_rules) > 0:
             groups.append(copy_update_dict(self._group_template, {
                 'name': 'Fill Tiles',
-                'uid': self._get_group_uid(),
+                'uid': self._get_next_uid(),
                 'rules': inside_rules,
             }))
 
@@ -129,9 +144,9 @@ class LevelCreator(object):
             if grid_tile['t'] in self._empty_tile_ids:
                 continue
 
-            pattern = self._get_pattern_for_file(source_layer['gridTiles'], grid_tile['px'])
+            pattern = self._get_pattern_for_tile(source_layer['gridTiles'], grid_tile['px'])
             rule = copy_update_dict(self._rule_template, {
-                'uid': self._get_rule_uid(),
+                'uid': self._get_next_uid(),
                 'tileIds': [grid_tile['t']],
                 'pattern': pattern,
             })
@@ -139,14 +154,7 @@ class LevelCreator(object):
         rules = self._remove_duplicate_rules(rules)
         rules.sort(key=lambda r: self._sort_pattern(r))
 
-        simplifier = Simplifier(
-            corners=self._options['simplified_corners'],
-            tjoins=self._options['simplified_tjoins'],
-            point=self._options['simplified_point'],
-            stubs=self._options['simplified_stubs'],
-            pjoins=self._options['simplified_pjoins'],
-        )
-        rules = simplifier.simplify(rules)
+        rules = self._simplifier.simplify(rules)
 
         return rules
 
@@ -154,20 +162,25 @@ class LevelCreator(object):
         total_sum = sum(rule['pattern'])
         return total_sum
 
-    def _get_pattern_for_file(self, grid_tiles, position):
+    def _get_pattern_for_tile(self, grid_tiles, position):
+        x, y = position
+        left_x, right_x = (x - self._tile_size), (x + self._tile_size)
+        above_y, under_y = (y - self._tile_size), (y + self._tile_size)
+
         pattern = [
-            self._tile_is_filled(grid_tiles, [position[0] - self._tile_size, position[1] - self._tile_size]),
-            self._tile_is_filled(grid_tiles, [position[0], position[1] - self._tile_size]),
-            self._tile_is_filled(grid_tiles, [position[0] + self._tile_size, position[1] - self._tile_size]),
+            self._tile_is_filled(grid_tiles, [left_x, above_y]),
+            self._tile_is_filled(grid_tiles, [x, above_y]),
+            self._tile_is_filled(grid_tiles, [right_x, above_y]),
 
-            self._tile_is_filled(grid_tiles, [position[0] - self._tile_size, position[1]]),
+            self._tile_is_filled(grid_tiles, [left_x, y]),
             1,
-            self._tile_is_filled(grid_tiles, [position[0] + self._tile_size, position[1]]),
+            self._tile_is_filled(grid_tiles, [right_x, y]),
 
-            self._tile_is_filled(grid_tiles, [position[0] - self._tile_size, position[1] + self._tile_size]),
-            self._tile_is_filled(grid_tiles, [position[0], position[1] + self._tile_size]),
-            self._tile_is_filled(grid_tiles, [position[0] + self._tile_size, position[1] + self._tile_size]),
+            self._tile_is_filled(grid_tiles, [left_x, under_y]),
+            self._tile_is_filled(grid_tiles, [x, under_y]),
+            self._tile_is_filled(grid_tiles, [right_x, under_y]),
         ]
+        
         return pattern
     
     def _tile_is_filled(self, grid_tiles, position):
@@ -181,31 +194,9 @@ class LevelCreator(object):
         found = [i1 for i1 in list1 if i1 in list2]
         return len(found) > 0
 
-    def _get_group_uid(self):
-        output_layer = self._get_def_layer(self._output_layer_id)
-        if len(output_layer['autoRuleGroups']) > 0:
-            return output_layer['autoRuleGroups'][0]['uid']
-        group_uid = self._next_uid
+    def _get_next_uid(self):
         self._next_uid += 1
-        return group_uid
-
-    def _get_rule_uid(self):
-        output_layer = self._get_def_layer(self._output_layer_id)
-        groups = output_layer['autoRuleGroups']
-        existing_rule_ids = []
-        rule_uid = self._next_uid
-
-        if len(groups) > 0 and len(groups[0]['rules']) > 0:
-            existing_rule_ids = [r['uid'] for r in groups[0]['rules']]
-
-        if len(existing_rule_ids):
-            while (rule_uid - 1) in existing_rule_ids:
-                rule_uid -= 1
-
-        if rule_uid == self._next_uid:
-            self._next_uid += 1
-
-        return rule_uid
+        return self._next_uid - 1
 
     def _get_json(self, file_name):
         with open(file_name) as fp:
@@ -229,8 +220,16 @@ class LevelCreator(object):
     def _get_def_layer(self, layer_id):
         layers = self._json_obj['defs']['layers']
         filtered = [l for l in layers if l['identifier'] == layer_id]
-        # TODO: error if len(filtered) != 1
-        return filtered[0]
+        if filtered:
+            return filtered[0]
+
+        layer = copy_update_dict(self._layer_template, {
+            'name': layer_id,
+            'uid': self._get_next_uid(),
+            'autoRuleGroups': [],
+        })
+
+        return layer
 
     def _prepare_options(self, options):
         prepared_options = copy_update_dict(self._default_options, options or {})

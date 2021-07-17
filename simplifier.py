@@ -1,3 +1,6 @@
+from utilities import copy_update_dict
+
+
 class Simplifier(object):
     _corners = True
     _tjoins = True
@@ -14,22 +17,16 @@ class Simplifier(object):
 
     def simplify(self, rules):
         if self._corners:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_corners(r['pattern'])}) for r in rules]
+            rules = [copy_update_dict(r, {'pattern': self._simplify_pattern_corners(r['pattern'])}) for r in rules]
         if self._tjoins:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_tjoins(r['pattern'])}) for r in rules]
+            rules = [copy_update_dict(r, {'pattern': self._simplify_pattern_tjoins(r['pattern'])}) for r in rules]
         if self._point:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_point(r['pattern'])}) for r in rules]
+            rules = [copy_update_dict(r, {'pattern': self._simplify_pattern_point(r['pattern'])}) for r in rules]
         if self._stubs:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_stubs(r['pattern'])}) for r in rules]
+            rules = [copy_update_dict(r, {'pattern': self._simplify_pattern_stubs(r['pattern'])}) for r in rules]
         if self._pjoins:
-            rules = [self._copy_update_dict(r, {'pattern': self._simplify_pattern_pjoins(r['pattern'])}) for r in rules]
+            rules = [copy_update_dict(r, {'pattern': self._simplify_pattern_pjoins(r['pattern'])}) for r in rules]
         return rules
-
-    # TODO: move to a utils file
-    def _copy_update_dict(self, d1, d2):
-        the_copy = d1.copy()
-        the_copy.update(d2)
-        return the_copy
 
     def _simplify_pattern_corners(self, pattern):
         # 1 tile thin (no filling tile)

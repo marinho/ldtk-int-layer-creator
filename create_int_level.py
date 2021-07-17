@@ -2,6 +2,7 @@ import json
 from functools import reduce
 from dict_templates import RULE_TEMPLATE, GROUP_TEMPLATE, DEFAULT_OPTIONS, SIMPLIFIED_OPTIONS
 from simplifier import Simplifier
+from utilities import copy_update_dict
 
 class LevelCreator(object):
     _json_obj = None
@@ -29,12 +30,6 @@ class LevelCreator(object):
         self._json_obj = self._get_json(file_name)
         self._next_uid = self._json_obj['nextUid']
 
-    def _prepare_options(self, options):
-        prepared_options = self._copy_update_dict(self._default_options, options or {})
-        if prepared_options['simplified']:
-            prepared_options = self._copy_update_dict(prepared_options, SIMPLIFIED_OPTIONS)
-        return prepared_options
-
     def update_file_with_int_level(self, output_file_path=None):
         file_json_updated = self._replace_int_level_in_json()
         json_as_string = json.dumps(file_json_updated, indent=2, sort_keys=True)
@@ -46,7 +41,7 @@ class LevelCreator(object):
         output_layer = self._get_def_layer(self._output_layer_id)
         rules = self._create_rules()
         groups = self._create_groups(rules)
-        output_layer_copy = self._copy_update_dict(output_layer, {
+        output_layer_copy = copy_update_dict(output_layer, {
             'autoRuleGroups': groups,
         })
         # TODO: "__tilesetDefUid": 1,
@@ -57,10 +52,10 @@ class LevelCreator(object):
         int_level_updated = self.get_int_level_updated()
         updated_layers = [(int_level_updated if l['identifier'] == self._output_layer_id else l)
             for l in self._json_obj['defs']['layers']]
-        updated_defs = self._copy_update_dict(self._json_obj['defs'], {
+        updated_defs = copy_update_dict(self._json_obj['defs'], {
             'layers': updated_layers,
         })
-        file_json_updated = self._copy_update_dict(self._json_obj, {
+        file_json_updated = copy_update_dict(self._json_obj, {
             'nextUid': self._next_uid,
             'defs': updated_defs,
         })
@@ -86,7 +81,7 @@ class LevelCreator(object):
             (r['pattern'][1] == -1 and r['pattern'][7] == -1) or
             (r['pattern'][3] == -1 and r['pattern'][5] == -1)]
         if len(thin_rules) > 0:
-            groups.append(self._copy_update_dict(self._group_template, {
+            groups.append(copy_update_dict(self._group_template, {
                 'name': 'Thin Tiles',
                 'uid': self._get_group_uid(),
                 'rules': thin_rules,
@@ -104,21 +99,21 @@ class LevelCreator(object):
         remaining_rules = [r for r in remaining_rules if r['uid'] not in inside_rules_ids]
 
         if len(remaining_rules) > 0:
-            groups.append(self._copy_update_dict(self._group_template, {
+            groups.append(copy_update_dict(self._group_template, {
                 'name': 'Remaining Tiles',
                 'uid': self._get_group_uid(),
                 'rules': remaining_rules,
             }))
 
         if len(intcorner_rules) > 0:
-            groups.append(self._copy_update_dict(self._group_template, {
+            groups.append(copy_update_dict(self._group_template, {
                 'name': 'Internal Corner Tiles',
                 'uid': self._get_group_uid(),
                 'rules': intcorner_rules,
             }))
 
         if len(inside_rules) > 0:
-            groups.append(self._copy_update_dict(self._group_template, {
+            groups.append(copy_update_dict(self._group_template, {
                 'name': 'Fill Tiles',
                 'uid': self._get_group_uid(),
                 'rules': inside_rules,
@@ -134,7 +129,7 @@ class LevelCreator(object):
                 continue
 
             pattern = self._get_pattern_for_file(source_layer['gridTiles'], grid_tile['px'])
-            rule = self._copy_update_dict(self._rule_template, {
+            rule = copy_update_dict(self._rule_template, {
                 'uid': self._get_rule_uid(),
                 'tileIds': [grid_tile['t']],
                 'pattern': pattern,
@@ -236,11 +231,12 @@ class LevelCreator(object):
         # TODO: error if len(filtered) != 1
         return filtered[0]
 
-    # TODO: move to a utils file
-    def _copy_update_dict(self, d1, d2):
-        the_copy = d1.copy()
-        the_copy.update(d2)
-        return the_copy
+    def _prepare_options(self, options):
+        prepared_options = copy_update_dict(self._default_options, options or {})
+        if prepared_options['simplified']:
+            prepared_options = copy_update_dict(prepared_options, SIMPLIFIED_OPTIONS)
+        return prepared_options
+
 
 if __name__ == '__main__':
     creator = LevelCreator('source-auto.ldtk', 'Level_0', 'Tiles', 'IntGrid2', [137], dict(

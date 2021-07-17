@@ -3,6 +3,7 @@ from functools import reduce
 from .dict_templates import LAYER_TEMPLATE, GROUP_TEMPLATE, RULE_TEMPLATE, DEFAULT_OPTIONS, SIMPLIFIED_OPTIONS
 from .simplifier import Simplifier
 from .utilities import copy_update_dict
+from .group_creator import GroupCreator
 
 class LevelCreator(object):
     _json_obj = None
@@ -32,6 +33,7 @@ class LevelCreator(object):
         self._json_obj = self._get_json(file_name)
         self._next_uid = self._json_obj['nextUid']
         self._create_simplifier()
+        self._group_creator = GroupCreator(lambda: self._get_next_uid())
 
     def update_file_with_int_level(self, output_file_path=None):
         file_json_updated = self._replace_output_layer_in_json()
@@ -42,7 +44,7 @@ class LevelCreator(object):
 
     def get_output_layer_updated(self):
         rules = self._create_rules()
-        groups = self._create_groups(rules)
+        groups = self._group_creator.create(rules)
         output_layer = self._get_def_layer(self._output_layer_id)
         output_layer['autoRuleGroups'] = groups
         # TODO: "__tilesetDefUid": 1,
@@ -79,54 +81,6 @@ class LevelCreator(object):
                 new_tile_ids = list(set(found_rule['tileIds'] + rule['tileIds']))
                 found_rule['tileIds'] = new_tile_ids
         return cleaned
-
-    def _create_groups(self, rules):
-        remaining_rules = [] + rules
-        groups = []
-
-        thin_rules = [r for r in remaining_rules if
-            (r['pattern'][1] == -1 and r['pattern'][7] == -1) or
-            (r['pattern'][3] == -1 and r['pattern'][5] == -1)]
-        if len(thin_rules) > 0:
-            groups.append(copy_update_dict(self._group_template, {
-                'name': 'Thin Tiles',
-                'uid': self._get_next_uid(),
-                'rules': thin_rules,
-            }))
-        thin_rules_ids = [r['uid'] for r in thin_rules]
-        remaining_rules = [r for r in remaining_rules if r['uid'] not in thin_rules_ids]
-
-        intcorner_rules = [r for r in remaining_rules if
-            r['pattern'] in ([-1,0,0,0,1,0,0,0,0], [0,0,-1,0,1,0,0,0,0], [0,0,0,0,1,0,-1,0,0], [0,0,0,0,1,0,0,0,-1])]
-        intcorner_rules_ids = [r['uid'] for r in intcorner_rules]
-        remaining_rules = [r for r in remaining_rules if r['uid'] not in intcorner_rules_ids]
-
-        inside_rules = [r for r in remaining_rules if r['pattern'] == [0,0,0,0,1,0,0,0,0]]
-        inside_rules_ids = [r['uid'] for r in inside_rules]
-        remaining_rules = [r for r in remaining_rules if r['uid'] not in inside_rules_ids]
-
-        if len(remaining_rules) > 0:
-            groups.append(copy_update_dict(self._group_template, {
-                'name': 'Remaining Tiles',
-                'uid': self._get_next_uid(),
-                'rules': remaining_rules,
-            }))
-
-        if len(intcorner_rules) > 0:
-            groups.append(copy_update_dict(self._group_template, {
-                'name': 'Internal Corner Tiles',
-                'uid': self._get_next_uid(),
-                'rules': intcorner_rules,
-            }))
-
-        if len(inside_rules) > 0:
-            groups.append(copy_update_dict(self._group_template, {
-                'name': 'Fill Tiles',
-                'uid': self._get_next_uid(),
-                'rules': inside_rules,
-            }))
-
-        return groups
 
     def _create_rules(self):
         source_layer = self._get_level_layer(self._source_layer_id)

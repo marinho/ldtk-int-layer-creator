@@ -6,6 +6,9 @@ install:
 	./env/bin/pip install -e .
 all: env pip install
 
+clean:
+	rm -Rf ./build
+	rm -Rf ./dist
 bump:
 	./env/bin/bumpversion --current-version 0.1.0 minor setup.py ldtk_intgrid_creator/__init__.py
 build:
@@ -16,3 +19,4 @@ upload-test:
 	./env/bin/twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 upload:
 	./env/bin/twine upload dist/*
+package: clean build check upload

@@ -5,7 +5,7 @@ Some explanation here soon...
 1. Use [LDtk](https://ldtk.io/) to create a new project
 2. in LDtk, create a new Tiles layer, with a sprites image and draw how the sprites should look like (i.e. manually draw a rectangle, a cross, etc. with the right tiles)
 3. save the project
-4. install this Python package (use virtualenv or default sytem Python installation)
+4. install this Python package (https://pypi.org/project/ldtk-intgrid-creator/)
 5. Run the script like this:
 
 Following this syntax:

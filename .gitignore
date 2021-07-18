@@ -1,5 +1,8 @@
 *.pyc
 .DS_Store
-ldtk_intgrid_creator.egg-info
 *.ldtk
 !examples/source.ldtk
+
+ldtk_intgrid_creator.egg-info
+build
+dist

@@ -16,9 +16,9 @@ setup(
     url='https://github.com/marinho/ldtk-int-layer-creator',
     author='Marinho Brandao',
     author_email='marinho@gmail.com',
-    license='LGPL',
+    license='MIT',
     classifiers=[
-        "License :: OSI Approved :: LGPL License",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
     ],

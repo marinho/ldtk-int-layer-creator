@@ -1,8 +1,8 @@
 import argparse
 from ldtk_intgrid_creator import LevelCreator
 
-def prepare_and_parse_args():
-    parser = argparse.ArgumentParser()
+def _prepare_and_parse_args():
+    parser = argparse.ArgumentParser(description='Create integer grid based on existing tile layer in LDtk project.')
     parser.add_argument('ldtk_file', help='Path to LDtk project file. i.e. "../my-project.ldtk"',)
     parser.add_argument('source_level', help='ID of the level to base rules on. i.e. "Level_0"')
     parser.add_argument('source_layer', help='ID of the Tiles layer inside level to base rules on. i.e. "Tiles"')
@@ -14,8 +14,8 @@ def prepare_and_parse_args():
     return args
 
 
-if __name__ == '__main__':
-    args = prepare_and_parse_args()
+def main():
+    args = _prepare_and_parse_args()
     empty_tile_ids = filter(lambda a: bool(a), args.empty_tile.split(','))
     empty_tile_ids = list(map(lambda a: int(a), empty_tile_ids))
 
@@ -29,3 +29,7 @@ if __name__ == '__main__':
         options=dict(simplified=not args.no_simplified)
     )
     creator.update_file_with_int_level()
+
+
+if __name__ == '__main__':
+    main()

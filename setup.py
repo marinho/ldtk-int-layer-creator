@@ -9,7 +9,7 @@ README = (CURDIR / "README.md").read_text()
 
 setup(
     name='ldtk_intgrid_creator',
-    version='0.1.0',
+    version='0.2.0',
     description='Tool to generate IntGrid level for LDtk projects',
     long_description=README,
     long_description_content_type="text/markdown",
